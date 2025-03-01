@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import MapSelector from './components/MapSelector'
+import MapSelector from './components/MapSelectorLeafletDraw'
+// import MapSelector from './components/MapSelectorLeaflet'
+// import MapSelector from './components/MapSelectorGoogle'
 import './App.css'
+import Navbar from './components/Navbar'
 
 function App() {
 
   return (
     <>
-      {/* <div style={{ textAlign: "center" }}>
-        <h1>Sentinel-2 Crop Mapping</h1>
-      </div> */}
-      <div style={{ width: "80vw", height: "500px", margin: "none", border: "2px solid #ddd", borderRadius: "10px" }}>
+      <Navbar/>
+      <div style={{ width: "100vw", height: "500px", margin: "auto", borderRadius: "10px" }}>
         <MapSelector/>
       </div>
     </>

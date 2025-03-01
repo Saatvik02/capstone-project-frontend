@@ -66,3 +66,18 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.leaflet-control.geosearch .glass {
+  background-color: #f0f0f0 !important; /* Light gray background */
+  color: #333333 !important; /* Dark text */
+  border: 1px solid #ccc !important;
+}
+
+.leaflet-control.geosearch .glass input {
+  background-color: transparent !important;
+  color: #333333 !important;
+}
+
+.leaflet-control.geosearch .glass input::placeholder {
+  color: #666666 !important;
+}
