@@ -44,8 +44,6 @@ const SearchField = () => {
 
 const MapSelector = () => {
     const [geoData, setGeoData] = useState(null);
-    const [bandVal, setBandVal] = useState(null);
-    const [imgSrc, setImgSrc] = useState(null);
     const [selectedFeature, setSelectedFeature] = useState(null);
     const [drawnGeoJson, setDrawnGeoJson] = useState(null);
 
@@ -67,20 +65,16 @@ const MapSelector = () => {
 
     const fetchPixelData = async (geoJsonData) => {
         try {
-            setBandVal("loading...");
-            const response = await fetch("http://127.0.0.1:8000/api/fetch-bands/", {
+            const response = await fetch("http://127.0.0.1:8000/api/fetch-indices/", {
                 method: "POST",
+                // headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrfToken() },
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(geoJsonData),
             });
             const data = await response.json();
-            console.log("Pixel Data:", data.pixels);
-            console.log("Image: ", data.image)
-            setBandVal(data.pixels);
-            setImgSrc(data.image)
+            // console.log("response:", data);
         } catch (error) {
             console.error("Error fetching pixel data:", error);
-            setBandVal("Error fetching pixel data");
         }
     };
 
@@ -146,25 +140,6 @@ const MapSelector = () => {
                     </div>
                 )}
             </div>
-
-            {/* <div
-                style={{
-                    color: "black",
-                    marginTop: "10px",
-                    padding: "10px",
-                    border: "1px solid #ddd",
-                    borderRadius: "5px",
-                    height: "500px",
-                    overflowY: "auto",
-                    backgroundColor: "#f9f9f9",
-                    fontFamily: "monospace",
-                    whiteSpace: "pre-wrap",
-                }}
-            >
-                <strong>Band values for each pixel in the region:</strong>
-                <pre>{JSON.stringify(bandVal, null, 2)}</pre>
-            </div> */}
-            {imgSrc && <img src={imgSrc} alt="Sentinel-2" />}
         </>
     );
 };
