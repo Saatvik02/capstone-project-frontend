@@ -1,18 +1,24 @@
-import { useState } from 'react'
+import { Route, Routes, BrowserRouter } from 'react-router-dom'
 import MapSelector from './components/MapSelectorLeafletDraw'
-// import MapSelector from './components/MapSelectorLeaflet'
-// import MapSelector from './components/MapSelectorGoogle'
 import './App.css'
 import Navbar from './components/Navbar'
+import Home from './components/Home'
+import About from './components/About'
+import Footer from './components/Footer'
 
 function App() {
 
   return (
     <>
-      <Navbar/>
-      <div style={{ width: "100vw", height: "500px", margin: "auto", borderRadius: "10px" }}>
-        <MapSelector/>
-      </div>
+      <BrowserRouter>
+        <Navbar />
+          <Routes>
+            <Route path={'/explore'} element={<MapSelector />} />
+            <Route path={'/'} element={<Home />} />
+            <Route path={'/about'} element={<About />} />
+          </Routes>
+        <Footer/>
+      </BrowserRouter>
     </>
 
   )

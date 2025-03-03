@@ -7,6 +7,7 @@ import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-geosearch/dist/geosearch.css";
 import L from 'leaflet';
 import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
+import { Box, Text } from "@chakra-ui/react";
 
 const SearchField = () => {
     const map = useMap();
@@ -17,7 +18,7 @@ const SearchField = () => {
             return;
         }
         console.log("Map initialized:", map);
-    
+
         const provider = new OpenStreetMapProvider();
         const searchControl = new GeoSearchControl({
             provider,
@@ -27,12 +28,33 @@ const SearchField = () => {
             retainZoomLevel: false,
             animateZoom: true,
             autoClose: true,
-            searchLabel: "Enter location...",
+            searchLabel: "Type a location to start mapping...",
             keepResult: true,
         });
-    
+
         map.addControl(searchControl);
-    
+
+        setTimeout(() => {
+            const searchContainer = document.querySelector(".leaflet-control-geosearch .results");
+            if (searchContainer) {
+                searchContainer.style.background = "white";
+                searchContainer.style.color = "black";
+                searchContainer.style.border = "0px";
+            }
+
+            const searchInput = document.querySelector(".leaflet-control-geosearch input");
+            if (searchInput) {
+                searchInput.style.background = "white";
+                searchInput.style.color = "black";
+                searchInput.style.border = "0px";
+                searchInput.style.fontSize = "0.85rem";
+            }
+            const style = document.createElement("style");
+            style.innerHTML = `.leaflet-control-geosearch input::placeholder { color: gray !important; opacity: 1; }`;
+            document.head.appendChild(style);
+
+        }, 100);
+
         return () => {
             map.removeControl(searchControl);
         };
@@ -40,7 +62,6 @@ const SearchField = () => {
 
     return null;
 };
-
 
 const MapSelector = () => {
     const [geoData, setGeoData] = useState(null);
@@ -54,31 +75,19 @@ const MapSelector = () => {
             .catch((err) => console.error("Failed to load GeoJSON:", err));
     }, []);
 
-    // Handle district selection
-    const onEachFeature = (feature, layer) => {
-        layer.on("click", () => {
-            setSelectedFeature(feature);
-            console.log("Selected Region GeoJSON:", feature.geometry);
-            fetchPixelData(feature.geometry);
-        });
-    };
-
     const fetchPixelData = async (geoJsonData) => {
         try {
             const response = await fetch("http://127.0.0.1:8000/api/fetch-indices/", {
                 method: "POST",
-                // headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrfToken() },
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(geoJsonData),
             });
             const data = await response.json();
-            // console.log("response:", data);
         } catch (error) {
             console.error("Error fetching pixel data:", error);
         }
     };
 
-    // Function to handle when a user draws a new region
     const onCreated = (e) => {
         const layer = e.layer;
         const drawnGeoJson = layer.toGeoJSON();
@@ -88,42 +97,21 @@ const MapSelector = () => {
     };
 
     return (
-        <>
-            <div
-                style={{
-                    width: "80vw",
-                    height: "500px",
-                    margin: "auto",
-                    border: "2px solid black",
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                }}
-            >
+        <Box height={'100vh'} mt={'5'} width={'100vw'} display={'flex'} bg={'gray.300'} justifyContent={'center'} alignItems={'center'}>
+            <Box zIndex={1} width="80vw" height="70vh" margin="auto" border="1px solid black" borderRadius="10px" overflow="hidden">
                 <MapContainer id="map" center={[12.97, 77.59]} zoom={10} style={{ width: "100%", height: "100%" }}>
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-                    {/* Feature Group for drawing */}
-                    <SearchField/>
-
+                    <SearchField />
                     <FeatureGroup>
                         <EditControl
                             position="topright"
                             onCreated={onCreated}
-                            draw={{
-                                polygon: true,
-                                rectangle: true,
-                                circle: false,
-                                circlemarker: false,
-                                marker: false,
-                                polyline: false,
-                            }}
+                            draw={{ polygon: true, rectangle: true, circle: false, circlemarker: false, marker: false, polyline: false }}
                         />
                     </FeatureGroup>
-
                     {geoData && (
                         <GeoJSON
                             data={geoData}
-                            // onEachFeature={onEachFeature}
                             style={(feature) => ({
                                 fillColor: selectedFeature && selectedFeature.properties.NAME_2 === feature.properties.NAME_2 ? "red" : "white",
                                 weight: 1,
@@ -133,14 +121,13 @@ const MapSelector = () => {
                         />
                     )}
                 </MapContainer>
-
                 {selectedFeature && (
-                    <div style={{ marginTop: "10px", textAlign: "center", fontSize: "18px" }}>
-                        Selected District: <b>{selectedFeature.properties.NAME_2}</b>
-                    </div>
+                    <Text mt={4} textAlign="center" fontSize="lg" fontWeight="bold">
+                        Selected District: {selectedFeature.properties.NAME_2}
+                    </Text>
                 )}
-            </div>
-        </>
+            </Box>
+        </Box>
     );
 };
 
