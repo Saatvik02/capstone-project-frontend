@@ -3,7 +3,7 @@ import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaEnvelope, FaPhone, Fa
 
 const Footer = () => {
     return (
-        <Box bg="gray.900" color="gray.400" py={5}>
+        <Box bg="#4F6F52" color="gray.400" py={5}>
             <Flex
                 direction={{ base: "column", md: "row" }}
                 justify="space-around"

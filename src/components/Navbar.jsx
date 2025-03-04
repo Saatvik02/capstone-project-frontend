@@ -8,7 +8,7 @@ const Navbar = () => {
             width="100%"  
             zIndex={2} 
             as="nav" 
-            bg="green.900" 
+            bg="#4F6F52" 
             color="#f4f1ed" 
             py="1rem" 
             boxShadow="0 2px 10px rgba(36,62,47,255)" 
@@ -17,13 +17,18 @@ const Navbar = () => {
             <Container maxW="80%">  {/* Restricts width for better spacing */}
                 <Flex align="center">
                     {/* AGROSCOPE Logo */}
-                    <Text 
-                        fontSize="2rem" 
-                        fontFamily="'Anton SC', sans-serif" 
-                        fontWeight="400"
-                    >
-                        AGROSCOPE
-                    </Text>
+                    <Link href="/" >
+                        <Text 
+                            fontSize="2rem" 
+                            fontFamily="'Anton SC', sans-serif" 
+                            fontWeight="400"
+                            _hover={{color: "#d1d5db"}}
+                            
+                        >
+                            AGROSCOPE
+                        </Text>
+                    </Link>
+                    
 
                     <Spacer /> {/* Pushes links to center */}
 
@@ -48,12 +53,12 @@ const Navbar = () => {
                             py="0.75rem"
                             borderRadius="0.5rem"
                             _hover={{
-                                bg: "green.900",
+                                bg: "#1A4D2E",
                                 color: "#f4f1ed",
-                                border: "1px solid #f4f1ed",
                             }}
                             fontWeight="600"
                             fontSize="1.2rem"
+                            border="0"
                         >
                             EXPLORE
                         </Button>
