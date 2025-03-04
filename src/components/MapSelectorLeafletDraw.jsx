@@ -9,6 +9,7 @@ import "leaflet-geosearch/dist/geosearch.css";
 import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
 import { Text, Progress, Box, Flex, VStack, Button, CircularProgress, useToast, useMediaQuery } from "@chakra-ui/react";
 import area from '@turf/area';
+import axiosInstance from "../axiosInstance";
 
 const SearchField = () => {
     const map = useMap();
@@ -72,6 +73,7 @@ const MapSelector = () => {
     const [loading, setLoading] = useState(false);
     const [progressInfo, setProgressInfo] = useState(null);
     const [isGreaterThan550] = useMediaQuery("(min-width: 550px)");
+    const [data, setData] = useState(null);
     const toast = useToast();
     const toast_id = 'toasting';
     const featureGroupRef = useRef();
@@ -154,17 +156,18 @@ const MapSelector = () => {
                 }
             };
 
-            const response = await fetch("http://localhost:8001/api/fetch-indices/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(drawnGeoJson),
-            });
-
+            try {
+                const response = await axiosInstance.post("/fetch-indices/", drawnGeoJson);
+                console.log("data: ", response.data);
+                setData(response.data);
+            } catch (error) {
+                console.log("error:", error);
+                displayToast(error.message || "An unexpected error occurred.");
+            }
+            
             if (!sentinel1Finished || !sentinel2Finished) {
                 gradualProgress(10, 20, "Fetching Sentinel-1 and Sentinel-2 data...");
             }
-
-            const data = await response.json();
 
             if (!sentinel1Finished || !sentinel2Finished) {
                 gradualProgress(50, 60, "All satellite data retrieved. Combining data...");
