@@ -10,6 +10,8 @@ import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
 import { Text, Progress, Box, Flex, VStack, Button, CircularProgress, useToast, useMediaQuery } from "@chakra-ui/react";
 import area from '@turf/area';
 import axiosInstance from "../axiosInstance";
+import { FaDownload } from "react-icons/fa"
+import { motion } from "framer-motion";
 
 const SearchField = () => {
     const map = useMap();
@@ -69,15 +71,18 @@ const MapSelector = () => {
     const [previousGeoJson, setPreviousGeoJson] = useState(null);
     const [regionInfo, setRegionInfo] = useState(null);
     const [progress, setProgress] = useState(0);
+    const [displayProgress, setDisplayProgress] = useState(0)
     const [outputReceived, setOutputReceived] = useState(false);
     const [loading, setLoading] = useState(false);
     const [progressInfo, setProgressInfo] = useState(null);
     const [isGreaterThan550] = useMediaQuery("(min-width: 550px)");
-    const [data, setData] = useState(null);
+    const [sentinel1, setSentinel1] = useState(null)
+    const [sentinel2, setSentinel2] = useState(null)
     const toast = useToast();
     const toast_id = 'toasting';
     const featureGroupRef = useRef();
 
+    const MotionButton = motion(Button);
     const MAX_AREA_KM2 = 20;
 
     const clearData = () => {
@@ -85,9 +90,13 @@ const MapSelector = () => {
         setPreviousGeoJson(null);
         setRegionInfo(null);
         setProgress(0);
+        setDisplayProgress(0);
         setOutputReceived(false);
         setLoading(false);
         setProgressInfo(null);
+        if (featureGroupRef.current) {
+            featureGroupRef.current.clearLayers();
+        }
     };
 
     const displayToast = (message) => {
@@ -109,109 +118,116 @@ const MapSelector = () => {
     };
 
     const fetchPixelData = async () => {
+        // Step 1: Creating GeoJSON Data (handled locally, 0% to 10%)
         if (!drawnGeoJson || !drawnGeoJson.geometry || !drawnGeoJson.geometry.coordinates.length) {
             displayToast("Please select an AOI (Area of Interest) on the map to proceed");
             return;
         }
-        setProgress(0);
-        setProgressInfo("Creating GeoJSON File...");
         setLoading(true);
-
-        let obj = {};
-        obj.area = calculateAreaKm2(drawnGeoJson);
-        let currentDate = new Date();
-        let pastDate = new Date();
-        pastDate.setDate(currentDate.getDate() - 15);
-        let formatDate = (date) => date.toISOString().split('T')[0];
-        obj.satelliteDate = `${formatDate(pastDate)} to ${formatDate(currentDate)}`;
-
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 700));
-            setProgress(5);
-            await new Promise((resolve) => setTimeout(resolve, 700));
-            setProgress(10);
-            setProgressInfo("GeoJSON prepared. Initiating data fetch...");
-
-            const ws = new WebSocket("ws://localhost:8001/ws");
-
-            let sentinel1Finished = false;
-            let sentinel2Finished = false;
-
+        setProgress(0);
+        setDisplayProgress(0);
+        setProgressInfo("Preparing request...");
+        gradualProgress(0, 10, "Creating GeoJSON Data...");
+    
+        const ws = new WebSocket("ws://localhost:8000/ws/progress");
+    
+        let resolveWsPromise; 
+        const wsPromise = new Promise((resolve, reject) => {
+            resolveWsPromise = resolve;
+    
+            ws.onopen = () => {
+                console.log("WebSocket connection established");
+            };
+    
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                if (data.type === "sentinel1_finished" && !sentinel1Finished) {
-                    sentinel1Finished = true;
-                    if (sentinel2Finished) {
-                        gradualProgress(35, 50, "All satellite data retrieved. Combining data...");
-                    } else {
-                        gradualProgress(20, 35, "Sentinel-1 data retrieved. Awaiting Sentinel-2 data...");
-                    }
-                } else if (data.type === "sentinel2_finished" && !sentinel2Finished) {
-                    sentinel2Finished = true;
-                    if (sentinel1Finished) {
-                        gradualProgress(35, 50, "All satellite data retrieved. Combining data...");
-                    } else {
-                        gradualProgress(20, 35, "Sentinel-2 data retrieved. Awaiting Sentinel-1 data...");
-                    }
+                console.log("WebSocket message:", data);
+    
+                if (data.type === "progress") {
+                    gradualProgress(data.startProgress, data.endProgress, data.message);
+                } else if (data.type === "error") {
+                    console.log("Inside data type error");
+                    reject(new Error(data.message || "WebSocket communication error"));
                 }
             };
-
-            try {
-                const response = await axiosInstance.post("/fetch-indices/", drawnGeoJson);
-                console.log("data: ", response.data);
-                setData(response.data);
-            } catch (error) {
-                console.log("error:", error);
-                displayToast(error.message || "An unexpected error occurred.");
-            }
+    
+            ws.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                reject(new Error("WebSocket connection failed"));
+            };
+    
+            ws.onclose = () => {
+                console.log("WebSocket connection closed");
+            };
+        });
+    
+        try {
+            const response = await axiosInstance.post("/fetch-indices/", drawnGeoJson);
+            console.log(response.data);
+            setSentinel1(response.data.s1);
+            setSentinel2(response.data.s2);
+    
+            resolveWsPromise("WebSocket progress completed");
+            await Promise.all([Promise.resolve(response), wsPromise]);
+    
+            // Step 6: Rendering Data on Frontend (95% to 100%)
+            const areaKm2 = calculateAreaKm2(drawnGeoJson);
+            const currentDate = new Date();
+            const pastDate = new Date();
+            pastDate.setDate(currentDate.getDate() - 15);
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            gradualProgress(95, 100, "Rendering Results on Frontend...");
+    
+            let obj = {
+                area: areaKm2.toFixed(2),
+                satelliteDate: `${formatDate(pastDate)} to ${formatDate(currentDate)}`,
+                ragiCoverage: 0,
+                nonRagiCoverage: 0
+            };
             
-            if (!sentinel1Finished || !sentinel2Finished) {
-                gradualProgress(10, 20, "Fetching Sentinel-1 and Sentinel-2 data...");
-            }
-
-            if (!sentinel1Finished || !sentinel2Finished) {
-                gradualProgress(50, 60, "All satellite data retrieved. Combining data...");
-                await new Promise((resolve) => setTimeout(resolve, 500));
-            }
-
-            gradualProgress(60, 70, "Combining Sentinel-1 and Sentinel-2 data...");
-            await new Promise((resolve) => setTimeout(resolve, 700));
-
-            gradualProgress(70, 85, "Running deep learning model for mapping...");
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            gradualProgress(85, 100, "Processing complete. Rendering results...");
-            setRegionInfo(data);
+            setRegionInfo(obj);
             setOutputReceived(true);
-
             ws.close();
-
-            // add data into obj
-            setRegionInfo(obj)
         } catch (error) {
+            console.log("error:", error);
             displayToast(error.message || "An unexpected error occurred.");
-            setRegionInfo(null)
-            setOutputReceived(false)
-            set
+            setRegionInfo(null);
+            setOutputReceived(false);
+            ws.close();
         } finally {
             setTimeout(() => {
                 setLoading(false);
                 setProgress(0);
+                setDisplayProgress(0);
                 setProgressInfo("Ready for next request.");
             }, 1000);
         }
     };
 
     const gradualProgress = (start, end, message) => {
-        let progressValue = start;
         setProgressInfo(message);
+        let startTime;
 
-        const interval = setInterval(() => {
-            progressValue += 2;
-            setProgress(progressValue);
-            if (progressValue >= end) clearInterval(interval);
-        }, 200);
+        const animate = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+            const duration = 1500;
+
+            let progress = start + ((end - start) * (elapsed / duration));
+
+            if (progress >= end) {
+                progress = end;
+            }
+
+            setProgress(progress);
+            setDisplayProgress(Math.round(progress));
+            if (progress < end) {
+                requestAnimationFrame(animate);
+            }
+        };
+        requestAnimationFrame(animate);
     };
+
 
     const calculateAreaKm2 = (geoJson) => {
         const areaM2 = area(geoJson);
@@ -274,6 +290,20 @@ const MapSelector = () => {
         });
     };
 
+    const downloadJSON = (data, filename) => {
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    const downloadSentinel1Data = () => sentinel1 ? downloadJSON(sentinel1, "sentinel_1_data.json") : displayToast('Error Downloading Sentinel 1 Data')
+    const downloadSentinel2Data = () => sentinel2 ? downloadJSON(sentinel2, "sentinel_2_data.json") : displayToast('Error Downloading Sentinel 2 Data')
+
     return (
         <Flex justifyContent={'center'} bg={'gray.300'} fontFamily="Signika Negative, serif" pt={'8rem'} pb={'4rem'} width="100vw" minHeight="100vh">
             <Flex direction={'column'} width={'80%'} alignItems={'center'} textAlign={'justify'}>
@@ -291,20 +321,15 @@ const MapSelector = () => {
                         </>
                     )}
                     {loading && (
-                        <VStack width={'inherit'} color={'black'} mt={1} align="start" spacing={1}
-                            style={{
-                                opacity: progress > 0 ? 1 : 0,
-                                transition: "opacity 0.25s ease-in-out"
-                            }}
-                        >
+                        <VStack width={'inherit'} color={'black'} mt={1} align="start" spacing={1} style={{ opacity: progress > 0 ? 1 : 0, transition: "opacity 0.25s ease-in-out" }}>
                             <Text fontSize="lg" fontWeight="bold">Processing Data</Text>
                             <Box w="100%">
-                                <Progress value={progress} size="lg" borderRadius={'1rem'} variant="subtle" bg={'green.900'} hasStripe isAnimated colorScheme="green" />
-                                <Text mt={1} fontSize="md" textAlign="right">{progress}%</Text>
+                                <Progress value={progress} size="lg" borderRadius={'1rem'} variant="subtle" bg={'green.900'} hasStripe isAnimated colorScheme="green" sx={{ transition: "width 1.5s ease-in-out" }} />
+                                <Flex direction={'row'} alignItems={'center'} justifyContent={'space-between'}>
+                                    <Text fontSize="md" color="gray.800">{progressInfo}</Text>
+                                    <Text mt={1} fontSize="md" textAlign="right">{displayProgress}%</Text>
+                                </Flex>
                             </Box>
-                            <Text fontSize="md" color="gray.800">
-                                {progressInfo}
-                            </Text>
                         </VStack>
                     )}
                 </Flex>
@@ -327,18 +352,18 @@ const MapSelector = () => {
                             </FeatureGroup>
                         </MapContainer>
                     </Box>
-                    <Flex direction={'column'}>
-                        <Box p="1rem" mt="1.25rem" color="gray.700" w="22vw" borderRadius="10px" boxShadow="0px 0px 10px rgba(0,0,0,0.3)">
+                    <Flex direction={'column'} w="22vw">
+                        <Box textAlign={'left'} p="1rem" mt="1.25rem" color="gray.700" w="22vw" borderRadius="10px" boxShadow="0px 0px 10px rgba(0,0,0,0.3)">
                             <Text fontSize="lg" pb="0.5rem" textAlign="center" fontWeight="bold">Region Details</Text>
                             {loading ? (
                                 <Flex justifyContent={'center'} alignItems={'center'}>
-                                    <Text textAlign="center" fontWeight={600} color="blue.500">Fetching region details</Text>
+                                    <Text textAlign="center" fontWeight={600} color="blue.500">Fetching Region Details</Text>
                                     <CircularProgress isIndeterminate color="blue.500" size={"1.5rem"} ml={2} />
                                 </Flex>
                             ) : outputReceived && regionInfo ? (
                                 <>
                                     <Text><b>Area:</b> {regionInfo?.area} km²</Text>
-                                    <Text><b>Satellite Data Duration:</b> {regionInfo?.satelliteDuration}</Text>
+                                    <Text><b>Satellite Data Duration:</b> {regionInfo?.satelliteDate}</Text>
                                     <Text><b>Ragi Coverage:</b> {regionInfo?.ragiCoverage}%</Text>
                                     <Text><b>Non-Ragi Coverage:</b> {regionInfo?.nonRagiCoverage}%</Text>
                                 </>
@@ -346,7 +371,18 @@ const MapSelector = () => {
                                 <Text>No region selected. Please choose a region to continue.</Text>
                             )}
                         </Box>
-                        <Button mt={3} _hover={{ border: "1px solid green", bg: "green.300" }} colorScheme="green" onClick={outputReceived ? clearData : fetchPixelData} isDisabled={loading} _disabled={{ bg: 'green.200', cursor: 'not-allowed' }} rightIcon={loading && <CircularProgress isIndeterminate color="green.500" size={"1.5rem"} mr={2} />}>
+                        {outputReceived && regionInfo && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeInOut" }}>
+                                <MotionButton w={'full'} mt={3} _hover={{ bg: "blue.300" }} _focus={{outline:"0"}} onClick={downloadSentinel1Data} colorScheme="blue" rightIcon={<FaDownload color="blue.500" size={"1rem"} />}>
+                                    Download Sentinel 1 JSON Data
+                                </MotionButton>
+
+                                <MotionButton w={'full'} mt={3} _hover={{ bg: "blue.300" }} _focus={{outline:"0"}} onClick={downloadSentinel2Data} colorScheme="blue" rightIcon={<FaDownload color="blue.500" size={"1rem"} />}>
+                                    Download Sentinel 2 JSON Data
+                                </MotionButton>
+                            </motion.div>
+                        )}
+                        <Button mt={3} _hover={{ border: "1px solid green", bg: "green.300" }} _focus={{outline:"0"}} colorScheme="green" onClick={outputReceived ? clearData : fetchPixelData} isDisabled={loading} _disabled={{ bg: 'green.200', cursor: 'not-allowed' }} rightIcon={loading && <CircularProgress isIndeterminate color="green.500" size={"1.5rem"} mr={2} />}>
                             {loading ? (
                                 "Analyzing..."
                             ) : outputReceived ? (
