@@ -170,20 +170,18 @@ const MapSelector = () => {
             resolveWsPromise("WebSocket progress completed");
             await Promise.all([Promise.resolve(response), wsPromise]);
     
-            // Step 6: Rendering Data on Frontend (95% to 100%)
+            // Step 6: Rendering Data on Frontend (90% to 100%)
+            gradualProgress(90, 99, "Rendering Results on Frontend...");
             const areaKm2 = calculateAreaKm2(drawnGeoJson);
             const currentDate = new Date();
             const pastDate = new Date();
             pastDate.setDate(currentDate.getDate() - 15);
             const formatDate = (date) => date.toISOString().split('T')[0];
-            gradualProgress(95, 100, "Rendering Results on Frontend...");
     
             let obj = {
                 area: areaKm2.toFixed(2),
                 satelliteDate: `${formatDate(pastDate)} to ${formatDate(currentDate)}`,
-                ragiCoverage: 0,
-                nonRagiCoverage: 0
-            };
+            }
             
             setRegionInfo(obj);
             setOutputReceived(true);
@@ -364,8 +362,8 @@ const MapSelector = () => {
                                 <>
                                     <Text><b>Area:</b> {regionInfo?.area} km²</Text>
                                     <Text><b>Satellite Data Duration:</b> {regionInfo?.satelliteDate}</Text>
-                                    <Text><b>Ragi Coverage:</b> {regionInfo?.ragiCoverage}%</Text>
-                                    <Text><b>Non-Ragi Coverage:</b> {regionInfo?.nonRagiCoverage}%</Text>
+                                    <Text><b>Ragi Coverage:</b> {regionInfo?.ragiCoverage || 0}%</Text>
+                                    <Text><b>Non-Ragi Coverage:</b> {regionInfo?.nonRagiCoverage || 0}%</Text>
                                 </>
                             ) : (
                                 <Text>No region selected. Please choose a region to continue.</Text>
