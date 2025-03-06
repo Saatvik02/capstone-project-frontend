@@ -12,7 +12,7 @@ const Home = () => {
           <Text fontSize={{ base: "lg", md: "xl" }} mt={4} fontWeight="medium" color="#34495E">
             Identify Ragi-Growing Regions Using Satellite Imagery and Deep Learning.
           </Text>
-          <Button as={Link} to="/explore" mt={6} bgGradient="linear(to-r, #4F6F52, #1A4D2E)" color="white" _hover={{ opacity: 0.9 }} size="lg" borderRadius="full" px={8} py={6} fontSize="lg" boxShadow="md">
+          <Button as={Link} to="/explore" mt={6} bgGradient="linear(to-r, #4F6F52, #1A4D2E)" color="white" _hover={{ opacity: 0.9 , color:"white"}} size="lg" borderRadius="full" px={8} py={6} fontSize="lg" boxShadow="md">
             Start Exploring
           </Button>
         </Container>
@@ -35,7 +35,7 @@ const Home = () => {
         </HStack>
       </Container>
 
-      <Box bgGradient="linear(to-b, #F4FFC3, #E4E4D0)" py={20} textAlign="center">
+      <Box bgGradient="linear(to-b, #F4FFC3, #E4E4D0)" py={20} textAlign="center" color="#2C3E50">
         <Container maxW="full">
           <Heading size="2xl" mb={12} fontWeight="bold" fontFamily="Signika Negative, sans-serif">Key Features</Heading>
           <HStack spacing={10} wrap="wrap" justify="center">
