@@ -303,19 +303,19 @@ const MapSelector = () => {
     const downloadSentinel2Data = () => sentinel2 ? downloadJSON(sentinel2, "sentinel_2_data.json") : displayToast('Error Downloading Sentinel 2 Data')
 
     return (
-        <Flex justifyContent={'center'} bg={'gray.300'} fontFamily="Signika Negative, serif" pt={'8rem'} pb={'4rem'} width="100vw" minHeight="100vh">
+        <Flex justifyContent={'center'} bgGradient="linear(to-b, #F4FFC3, #E4E4D0)" fontFamily="Signika Negative, serif" pt={'8rem'} pb={'4rem'} width="100vw" minHeight="100vh">
             <Flex direction={'column'} width={'80%'} alignItems={'center'} textAlign={'justify'}>
-                <Text color={'black'} fontWeight={'bold'} fontSize={'3xl'} pb={2}>Analyze Ragi Coverage</Text>
+                <Text color="#2C3E50" fontWeight={'bold'} fontSize={'3xl'} pb={2}>Analyze Ragi Coverage</Text>
                 <Flex height={'10vh'} width={'100%'} direction={'column'} alignItems={'center'} justifyContent={'center'}>
                     {!loading && !outputReceived && (
                         <>
-                            <Text fontSize="xl" fontWeight="medium" color="black">Select a Region to Identify Ragi Growing Areas</Text>
+                            <Text fontSize="xl" fontWeight="medium" color="#2C3E50">Select a Region to Identify Ragi Growing Areas</Text>
                             <Text fontSize="md" color="gray.700">Use the search bar and draw a polygon/rectangle to select your area (max {MAX_AREA_KM2} km²).</Text>
                         </>
                     )}
                     {!loading && outputReceived && (
                         <>
-                            <Text fontSize="xl" fontWeight="medium" color="black">Data Analysis Successfully Completed!</Text>
+                            <Text fontSize="xl" fontWeight="medium" color="#2C3E50">Data Analysis Successfully Completed!</Text>
                         </>
                     )}
                     {loading && (
@@ -351,8 +351,8 @@ const MapSelector = () => {
                         </MapContainer>
                     </Box>
                     <Flex direction={'column'} w="22vw">
-                        <Box textAlign={'left'} p="1rem" mt="1.25rem" color="gray.700" w="22vw" borderRadius="10px" boxShadow="0px 0px 10px rgba(0,0,0,0.3)">
-                            <Text fontSize="lg" pb="0.5rem" textAlign="center" fontWeight="bold">Region Details</Text>
+                        <Box textAlign={'left'} p="1rem" mt="1.25rem" color="gray.700" w="22vw" borderRadius="10px" boxShadow="0px 0px 10px rgba(0,0,0,0.3)" bg="#FDF6EC">
+                            <Text fontSize="lg" pb="0.5rem" textAlign="center" fontWeight="bold" >Region Details</Text>
                             {loading ? (
                                 <Flex justifyContent={'center'} alignItems={'center'}>
                                     <Text textAlign="center" fontWeight={600} color="blue.500">Fetching Region Details</Text>
@@ -366,21 +366,21 @@ const MapSelector = () => {
                                     <Text><b>Non-Ragi Coverage:</b> {regionInfo?.nonRagiCoverage || 0}%</Text>
                                 </>
                             ) : (
-                                <Text>No region selected. Please choose a region to continue.</Text>
+                                <Text color="#2C3E50">No region selected. Please choose a region to continue.</Text>
                             )}
                         </Box>
                         {outputReceived && regionInfo && (
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeInOut" }}>
-                                <MotionButton w={'full'} mt={3} _hover={{ bg: "blue.300" }} _focus={{outline:"0"}} onClick={downloadSentinel1Data} colorScheme="blue" rightIcon={<FaDownload color="blue.500" size={"1rem"} />}>
+                                <MotionButton w={'full'} mt={3} _hover={{  border: "none", bg: "blue.300" }} _focus={{outline:"0"}} onClick={downloadSentinel1Data} colorScheme="blue" rightIcon={<FaDownload color="blue.500" size={"1rem"} />}>
                                     Download Sentinel 1 JSON Data
                                 </MotionButton>
 
-                                <MotionButton w={'full'} mt={3} _hover={{ bg: "blue.300" }} _focus={{outline:"0"}} onClick={downloadSentinel2Data} colorScheme="blue" rightIcon={<FaDownload color="blue.500" size={"1rem"} />}>
+                                <MotionButton w={'full'} mt={3} _hover={{  border: "none", bg: "blue.300" }} _focus={{outline:"0"}} onClick={downloadSentinel2Data} colorScheme="blue" rightIcon={<FaDownload color="blue.500" size={"1rem"} />}>
                                     Download Sentinel 2 JSON Data
                                 </MotionButton>
                             </motion.div>
                         )}
-                        <Button mt={3} _hover={{ border: "1px solid green", bg: "green.300" }} _focus={{outline:"0"}} colorScheme="green" onClick={outputReceived ? clearData : fetchPixelData} isDisabled={loading} _disabled={{ bg: 'green.200', cursor: 'not-allowed' }} rightIcon={loading && <CircularProgress isIndeterminate color="green.500" size={"1.5rem"} mr={2} />}>
+                        <Button mt={3} _hover={{ border: "none", bg: "green.300" }} _focus={{outline:"0"}} colorScheme="green" onClick={outputReceived ? clearData : fetchPixelData} isDisabled={loading} _disabled={{ bg: 'green.200', cursor: 'not-allowed' }} rightIcon={loading && <CircularProgress isIndeterminate color="green.500" size={"1.5rem"} mr={2} />}>
                             {loading ? (
                                 "Analyzing..."
                             ) : outputReceived ? (
