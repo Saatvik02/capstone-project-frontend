@@ -8,7 +8,7 @@ const Navbar = () => {
             width="100%"
             zIndex={10}
             as="nav"
-            bg="rgba(79, 111, 82, 0.85)" // Glassmorphism effect
+            bg="rgba(79, 111, 82, 0.85)"
             backdropFilter="blur(10px)"
             color="#f4f1ed"
             py="1rem"
@@ -17,7 +17,6 @@ const Navbar = () => {
         >
             <Container maxW="85%">
                 <Flex align="center">
-                    {/* Brand Name */}
                     <Link
                         href="/"
                         fontSize="2rem"
@@ -34,7 +33,6 @@ const Navbar = () => {
                     </Link>
                     <Spacer />
 
-                    {/* Navigation Links */}
                     <Flex gap="2rem">
                         {["HOME", "ABOUT"].map((item, index) => (
                             <Link
@@ -82,7 +80,8 @@ const Navbar = () => {
                                bg: "linear-gradient(135deg, #A7C7A7, #7FA07F)",
                                color: "white",
                                transform: "scale(1.05)",
-                               boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)"
+                               boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+                               border: "0"
                            }}
                            _focus={{
                                outline: "none",
