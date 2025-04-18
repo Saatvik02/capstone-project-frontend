@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { FeatureGroup, GeoJSON } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-geosearch/dist/geosearch.css";
 import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
-import { Text, Progress, Box, Flex, VStack, Button, CircularProgress, useToast, useMediaQuery } from "@chakra-ui/react";
+import { Text, Progress, Box, Flex, VStack, Button, CircularProgress, useToast, useMediaQuery, Select } from "@chakra-ui/react";
 import area from "@turf/area";
 import axiosInstance from "../axiosInstance";
 import { FaDownload } from "react-icons/fa";
@@ -22,7 +22,6 @@ const SearchField = () => {
             console.log("Map not yet initialized");
             return;
         }
-        console.log("Map initialized:", map);
 
         const provider = new OpenStreetMapProvider();
         const searchControl = new GeoSearchControl({
@@ -68,36 +67,40 @@ const SearchField = () => {
 };
 
 
-const MapContent = ({
-    setDrawnGeoJson,
-    setPreviousGeoJson,
-    setRegionInfo,
-    displayToast,
-    MAX_AREA_KM2,
-    calculateAreaKm2,
-    predictionData,
-    setFlag
-}) => {
+const MapContent = forwardRef(({ 
+    setDrawnGeoJson, 
+    setPreviousGeoJson, 
+    setRegionInfo, 
+    displayToast, 
+    MAX_AREA_KM2, 
+    calculateAreaKm2, 
+    predictionData, 
+    setFlag, 
+    previousGeoJson
+}, ref) => {
     const map = useMap();
     const featureGroupRef = useRef();
-
+    
+    // Expose clearLayers method via ref
+    useImperativeHandle(ref, () => ({
+        clearLayers: () => {
+            if (featureGroupRef.current) {
+                featureGroupRef.current.clearLayers();
+            }
+        }
+    }));
+    
     const analyzeTileColors = async (geoJson) => {
-        console.log("Starting analyzeTileColors with GeoJSON:", JSON.stringify(geoJson));
-
         const bounds = L.geoJSON(geoJson).getBounds();
-        console.log("Bounds of GeoJSON:", bounds.toBBoxString());
 
         const zoom = map.getZoom() || 10;
-        console.log("Current zoom level:", zoom);
 
         const tileSize = 256;
         const southWest = bounds.getSouthWest();
         const northEast = bounds.getNorthEast();
-        console.log("SouthWest:", southWest, "NorthEast:", northEast);
 
         const tileSW = latLngToTileCoords(southWest, zoom);
         const tileNE = latLngToTileCoords(northEast, zoom);
-        console.log("Tile coordinates - SW:", tileSW, "NE:", tileNE);
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
@@ -107,18 +110,15 @@ const MapContent = ({
         }
 
         const geoJsonLayer = L.geoJSON(geoJson);
-        console.log("GeoJSON layer created for point-in-polygon checks");
 
         for (let x = Math.floor(tileSW.x); x <= Math.ceil(tileNE.x); x++) {
             for (let y = Math.floor(tileNE.y); y <= Math.ceil(tileSW.y); y++) {
                 const tileUrl = `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
-                console.log(`Fetching tile: ${tileUrl}`);
 
                 const img = new Image();
                 img.crossOrigin = "Anonymous";
                 await new Promise((resolve, reject) => {
                     img.onload = () => {
-                        console.log(`Tile loaded: ${tileUrl}`);
                         resolve();
                     };
                     img.onerror = () => {
@@ -131,10 +131,8 @@ const MapContent = ({
                 canvas.width = tileSize;
                 canvas.height = tileSize;
                 ctx.drawImage(img, 0, 0);
-                console.log(`Tile drawn on canvas: ${x},${y}`);
 
                 const imageData = ctx.getImageData(0, 0, tileSize, tileSize).data;
-                console.log(`Pixel data length for tile ${x},${y}:`, imageData.length);
 
                 for (let i = 0; i < imageData.length; i += 4) {
                     const r = imageData[i];
@@ -147,10 +145,7 @@ const MapContent = ({
                     const latLng = L.CRS.EPSG3857.pointToLatLng(tilePoint, zoom);
 
                     if (geoJsonLayer.getBounds().contains(latLng) && Turf.booleanPointInPolygon([latLng.lng, latLng.lat], geoJson)) {
-                        console.log(`Pixel at (${pixelX}, ${pixelY}) in tile (${x}, ${y}) - LatLng: ${latLng.lat},${latLng.lng} - RGB: (${r}, ${g}, ${b})`);
                         const isGreen = g > r && g > b && g > 80 && Math.abs(r - b) < 50;
-                        console.log(`Is pixel green? ${isGreen} (Thresholds: g > r: ${g > r}, g > b: ${g > b}, g > 80: ${g > 80}, |r-b| < 50: ${Math.abs(r - b) < 50})`);
-
                         if (!isGreen) {
                             console.log(`Non-green pixel detected at (${pixelX}, ${pixelY}) in tile (${x}, ${y}) - RGB: (${r}, ${g}, ${b})`);
                             // displayToast("The selected region contains non-grassland features (e.g., water, buildings). Please select a grassland-only area.");
@@ -158,7 +153,6 @@ const MapContent = ({
                         }
                     }
                 }
-                console.log(`All pixels in tile (${x}, ${y}) checked - all green so far`);
             }
         }
 
@@ -169,7 +163,6 @@ const MapContent = ({
     const latLngToTileCoords = (latLng, zoom) => {
         const point = map.project(latLng, zoom);
         const tilePoint = point.divideBy(256).floor();
-        console.log(`Converting LatLng ${latLng.lat},${latLng.lng} to tile coords:`, tilePoint);
         return tilePoint;
     };
 
@@ -185,7 +178,8 @@ const MapContent = ({
             setRegionInfo(null);
             setPreviousGeoJson(null);
         } else {
-            const isGrasslandOnly = await analyzeTileColors(drawnGeoJson);
+            // const isGrasslandOnly = await analyzeTileColors(drawnGeoJson);
+            const isGrasslandOnly = true;
             if (isGrasslandOnly) {
                 setDrawnGeoJson(drawnGeoJson);
                 setPreviousGeoJson(drawnGeoJson);
@@ -209,10 +203,6 @@ const MapContent = ({
             const updatedGeoJson = layer.toGeoJSON();
             const areaKm2 = calculateAreaKm2(updatedGeoJson);
 
-            console.log("Edited GeoJSON:", updatedGeoJson);
-            console.log("Area (km²):", areaKm2);
-            console.log("Previous GeoJSON:", previousGeoJson);
-
             if (areaKm2 > MAX_AREA_KM2) {
                 displayToast(`The edited area (${areaKm2.toFixed(2)} km²) exceeds the maximum limit of ${MAX_AREA_KM2} km². Reverting to previous shape.`);
                 if (previousGeoJson && fg) {
@@ -224,11 +214,9 @@ const MapContent = ({
                         },
                     });
                     revertedLayer.addTo(fg);
-                    console.log("Reverted layer added to map");
                 } else {
                     layer.remove();
                     setDrawnGeoJson(null);
-                    console.log("No previous GeoJSON, removed layer");
                 }
             } else {
                 setDrawnGeoJson(updatedGeoJson);
@@ -239,25 +227,25 @@ const MapContent = ({
 
     return (
         <>
-        <FeatureGroup ref={featureGroupRef}>
-            <EditControl
-                position="topright"
-                onCreated={onCreated}
-                onEdited={onEdited}
-                onDeleted={() => {
-                    setDrawnGeoJson(null);
-                    setPreviousGeoJson(null);
-                }}
-                draw={{ polygon: true, rectangle: false, circle: false, circlemarker: false, marker: false, polyline: false }}
+            <FeatureGroup ref={featureGroupRef}>
+                <EditControl
+                    position="topright"
+                    onCreated={onCreated}
+                    onEdited={onEdited}
+                    onDeleted={() => {
+                        setDrawnGeoJson(null);
+                        setPreviousGeoJson(null);
+                    }}
+                    draw={{ polygon: true, rectangle: false, circle: false, circlemarker: false, marker: false, polyline: false }}
                 />
-        </FeatureGroup>
-        {predictionData && (
+            </FeatureGroup>
+            {predictionData && (
                 <GeoJSON
                     data={predictionData}
                     pointToLayer={(feature, latlng) => {
                         const color = feature.properties.prediction === 1 ? "green" : "red";
                         return L.circleMarker(latlng, {
-                            radius: 3,
+                            radius: 4,
                             color: color,
                             fillColor: color,
                             fillOpacity: 0.6,
@@ -267,7 +255,7 @@ const MapContent = ({
             )}
         </>
     );
-};
+});
 
 // Main MapSelector component
 const MapSelector = () => {
@@ -285,22 +273,34 @@ const MapSelector = () => {
     const toast = useToast();
     const toast_id = "toasting";
     const [predictionData, setPredictionData] = useState(null);
+    const mapContentRef = useRef()
     const [flag, setFlag] = useState(true)
+
+    const [startYear, setStartYear] = useState("");
+    const [endYear, setEndYear] = useState("");
+    const [startMonth, setStartMonth] = useState("");
+    const [endMonth, setEndMonth] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+
+    const years = [2024, 2023, 2022, 2021, 2020, 2019];
+    const months = [
+        { value: "01", label: "January" },
+        { value: "02", label: "February" },
+        { value: "03", label: "March" },
+        { value: "04", label: "April" },
+        { value: "05", label: "May" },
+        { value: "06", label: "June" },
+        { value: "07", label: "July" },
+        { value: "08", label: "August" },
+        { value: "09", label: "September" },
+        { value: "10", label: "October" },
+        { value: "11", label: "November" },
+        { value: "12", label: "December" },
+    ];
 
     const MotionButton = motion(Button);
     const MAX_AREA_KM2 = 20;
-
-    const clearData = () => {
-        setDrawnGeoJson(null);
-        setPreviousGeoJson(null);
-        setRegionInfo(null);
-        setProgress(0);
-        setDisplayProgress(0);
-        setOutputReceived(false);
-        setLoading(false);
-        setProgressInfo(null);
-        setPredictionData(null);
-    };
 
     const displayToast = (message) => {
         !toast.isActive(toast_id) &&
@@ -317,11 +317,73 @@ const MapSelector = () => {
             });
     };
 
+    useEffect(() => {
+        const calculateEndDate = () => {
+          const startDate = new Date(startYear, startMonth - 1, 1);
+          const predictedDate = new Date(startDate);
+          predictedDate.setMonth(startDate.getMonth() + 5);
+      
+          const predictedYear = predictedDate.getFullYear();
+          const predictedMonth = predictedDate.getMonth() + 1;
+
+          let lastDay;
+          switch (predictedMonth) {
+            case 2:
+              lastDay = 28;
+              break;
+            case 4:
+            case 6:
+            case 9:
+            case 11:
+              lastDay = 30;
+              break;
+            default:
+              lastDay = 31;
+          }
+          if (predictedYear != endYear || predictedMonth != endMonth) {
+            displayToast(`The selected date range is invalid. Please select a range of 6 Months`);
+          }
+
+          setStartDate(`${startYear}-${startMonth}-01`);
+          setEndDate(`${endYear}-${endMonth}-${lastDay}`);
+        };
+        if (startYear && startMonth && endYear && endMonth) {
+          calculateEndDate();
+        }
+      }, [startYear, endYear, startMonth, endMonth]);
+
+    const clearData = () => {
+        setStartDate("");
+        setEndDate("");
+        setStartMonth("");
+        setEndMonth("");
+        setStartYear("");
+        setEndYear("");
+        setDrawnGeoJson(null);
+        setPreviousGeoJson(null);
+        setRegionInfo(null);
+        setProgress(0);
+        setDisplayProgress(0);
+        setOutputReceived(false);
+        setLoading(false);
+        setProgressInfo(null);
+        setPredictionData(null);
+        if (mapContentRef.current) {
+            mapContentRef.current.clearLayers();
+        }
+        };
+
     const fetchPixelData = async (flag) => {
         if (!drawnGeoJson || !drawnGeoJson.geometry || !drawnGeoJson.geometry.coordinates.length) {
             displayToast("Please select an AOI (Area of Interest) on the map to proceed");
             return;
         }
+        
+        if (!startMonth || !endMonth || !startYear || !endYear) {
+            displayToast("Please select a date range to proceed");
+            return;
+        }
+
         setLoading(true);
         setProgress(0);
         setDisplayProgress(0);
@@ -341,7 +403,6 @@ const MapSelector = () => {
                 if (data.type === "progress") {
                     gradualProgress(data.startProgress, data.endProgress, data.message);
                 } else if (data.type === "error") {
-                    console.log("Inside data type error");
                     reject(new Error(data.message || "WebSocket communication error"));
                 }
             };
@@ -353,8 +414,8 @@ const MapSelector = () => {
         });
 
         try {
-            const response = await axiosInstance.post("/fetch-indices/", {geojson:drawnGeoJson, flag:flag});
-            console.log(response.data);
+            const response = await axiosInstance.post("/fetch-indices/", { geojson: drawnGeoJson, flag: flag, startDate: startDate, endDate: endDate });
+            console.log(response.data); 
             setPredictionData(response.data.output.map);
             setSentinel1(response.data.results.s1);
             setSentinel2(response.data.results.s2);
@@ -374,15 +435,14 @@ const MapSelector = () => {
             let obj = {
                 area: areaKm2.toFixed(2),
                 satelliteDate: `${formatDate(pastDate)} to ${formatDate(currentDate)}`,
-                ragiCoverage: parseFloat(metrics.ragi_coverage).toFixed(3),
-                nonRagiCoverage: parseFloat(metrics.non_ragi_coverage).toFixed(3),
+                ragiCoverage: parseFloat(metrics.ragiCoverage),
+                nonRagiCoverage: parseFloat(metrics.nonRagiCoverage),
             };
-
+            console.log(obj)
             setRegionInfo(obj);
             setOutputReceived(true);
             ws.close();
         } catch (error) {
-            console.log("error:", error);
             displayToast(error.message || "An unexpected error occurred.");
             setRegionInfo(null);
             setOutputReceived(false);
@@ -509,8 +569,10 @@ const MapSelector = () => {
                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                             <SearchField />
                             <MapContent
+                                ref={mapContentRef}
                                 setDrawnGeoJson={setDrawnGeoJson}
                                 setPreviousGeoJson={setPreviousGeoJson}
+                                previousGeoJson={previousGeoJson}
                                 setRegionInfo={setRegionInfo}
                                 displayToast={displayToast}
                                 MAX_AREA_KM2={MAX_AREA_KM2}
@@ -521,10 +583,94 @@ const MapSelector = () => {
                         </MapContainer>
                     </Box>
                     <Flex direction={"column"} w="22vw">
+
+                        <Box
+                            textAlign="left"
+                            mt="1.25rem"
+                            p="1rem"
+                            mb="1rem"
+                            color="gray.700"
+                            w="22vw"
+                            borderRadius="10px"
+                            boxShadow="0px 0px 10px rgba(0,0,0,0.3)"
+                            bg="#FDF6EC"
+                        >
+                            <Text fontSize="lg" pb="0.5rem" textAlign="center" fontWeight="bold">
+                                Select Date Range
+                            </Text>
+                            <Flex direction="column" gap={3}>
+                                <Flex gap={2} background={'white'}>
+                                    <Select
+                                        value={startYear}
+                                        onChange={(e) => setStartYear(e.target.value)}
+                                        style={{background: 'white !important', border: 0, outline: 0, width: '100%'}}
+                                    >
+                                        <option value="" disabled style={{background:'white', border:0}}>
+                                            Start Year
+                                        </option>
+                                        {years.map((year) => (
+                                            <option key={year} value={year} style={{background:'white', border:0}}>
+                                                {year}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <Select
+                                        value={startMonth}
+                                        onChange={(e) => setStartMonth(e.target.value)}
+                                        isDisabled={!startYear}
+                                        style={{background: 'white !important', border: 0, outline: 0, width: '100%'}}
+                                    >
+                                        <option value="" disabled style={{background:'white', border:0}}>
+                                            Start Month
+                                        </option>
+                                        {months.map((month) => (
+                                            <option key={month.value} value={month.value} style={{background:'white', border:0}}>
+                                                {month.label}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </Flex>
+                                <Flex gap={2}>
+                                    <Select
+                                        value={endYear}
+                                        onChange={(e) => setEndYear(e.target.value)}
+                                        isDisabled={!startYear || !startMonth}
+                                        style={{background: 'white !important', border: 0, outline: 0, width: '100%'}}
+                                    >
+                                        <option value="" disabled style={{background:'white', border:0}}>
+                                            End Year
+                                        </option>
+                                        {years
+                                            .filter((year) => year >= startYear)
+                                            .map((year) => (
+                                                <option key={year} value={year} style={{background:'white', border:0}}>
+                                                    {year}
+                                                </option>
+                                            ))}
+                                    </Select>
+                                    <Select
+                                        value={endMonth}
+                                        onChange={(e) => setEndMonth(e.target.value)}
+                                        isDisabled={!endYear}
+                                        style={{background: 'white !important', border: 0, outline: 0, width: '100%'}}
+                                    >
+                                        <option value="" disabled style={{background:'white', border:0}}>
+                                            End Month
+                                        </option>
+                                        {months.map((month) => (
+                                            <option key={month.value} value={month.value} style={{background:'white', border:0}}>
+                                                {month.label}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </Flex>
+                            </Flex>
+                        </Box>
+
                         <Box
                             textAlign={"left"}
                             p="1rem"
-                            mt="1.25rem"
+                            mb="0.5rem"
                             color="gray.700"
                             w="22vw"
                             borderRadius="10px"
@@ -545,9 +691,6 @@ const MapSelector = () => {
                                 <>
                                     <Text>
                                         <b>Area:</b> {regionInfo?.area} km²
-                                    </Text>
-                                    <Text>
-                                        <b>Satellite Data Duration:</b> {regionInfo?.satelliteDate}
                                     </Text>
                                     <Text>
                                         <b>Ragi Coverage:</b> {regionInfo?.ragiCoverage || 0}%
@@ -595,7 +738,7 @@ const MapSelector = () => {
                             _hover={{ border: "none", bg: "green.300" }}
                             _focus={{ outline: "0" }}
                             colorScheme="green"
-                            onClick={outputReceived ? clearData :() => fetchPixelData(flag)}
+                            onClick={outputReceived ? clearData : () => fetchPixelData(flag)}
                             isDisabled={loading}
                             _disabled={{ bg: "green.200", cursor: "not-allowed" }}
                             rightIcon={loading && <CircularProgress isIndeterminate color="green.500" size={"1.5rem"} mr={2} />}

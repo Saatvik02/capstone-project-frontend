@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Flex, Button, Link, Spacer, Container } from "@chakra-ui/react";
+import { Box, Flex, Button, Link, Spacer, Container, Image } from "@chakra-ui/react";
 
 const Navbar = () => {
     return (
@@ -29,7 +29,11 @@ const Navbar = () => {
                             transition: "0.3s ease-in-out"
                         }}
                     >
+                        <Flex direction={"row"} align="center">
+
+                        <Image src="/logo.png" alt="Logo" boxSize="2.4rem" mr="1rem" />
                         AGROSCOPE
+                        </Flex>
                     </Link>
                     <Spacer />
 

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: agro-frontend
+  template:
+    metadata:
+      labels:
+        app: agro-frontend
+    spec:
+      containers:
+        - name: agro-frontend
+          image: registry.digitalocean.com/agroscope/frontend:1.0.0
+          ports:
+          - containerPort: 4173

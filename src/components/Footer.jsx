@@ -79,7 +79,7 @@ const Footer = () => {
                         <Link href="https://instagram.com" target="_blank" _hover={{ transform: "scale(1.1)", transition: "0.2s" }}>
                             <Icon as={FaInstagram} boxSize={5} color="white" />
                         </Link>
-                        <Link href="https://linkedin.com" target="_blank" _hover={{ transform: "scale(1.1)", transition: "0.2s" }}>
+                        <Link href="https://in.linkedin.com/" target="_blank" _hover={{ transform: "scale(1.1)", transition: "0.2s" }}>
                             <Icon as={FaLinkedin} boxSize={5} color="white" />
                         </Link>
                     </HStack>
