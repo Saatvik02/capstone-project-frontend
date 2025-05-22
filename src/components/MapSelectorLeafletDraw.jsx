@@ -587,7 +587,7 @@ const MapSelector = () => {
         alignItems="center"
         textAlign="justify"
       >
-        <Text color="#2C3E50" fontWeight={"bold"} fontSize={"3xl"} pb={2}>
+        <Text color="#2C3E50" fontWeight={"bold"} fontSize={"3xl"}>
           Analyze Ragi Coverage
         </Text>
         <Flex
@@ -600,13 +600,17 @@ const MapSelector = () => {
           {!loading && !outputReceived && (
             <>
               <Text
-                fontSize={{ base: "lg", md: "xl" }}
+                fontSize={{ base: "md", md: "lg" }}
                 fontWeight="medium"
                 color="#2C3E50"
               >
                 Select a Region to Identify Ragi Growing Areas
               </Text>
-              <Text fontSize="md" color="gray.700">
+              <Text
+                fontSize={{ base: "xs", md: "sm" }}
+                color="gray.700"
+                lineHeight="1.4"
+              >
                 Use the search bar and draw a polygon/rectangle to select your
                 area (max {MAX_AREA_KM2} km²).
               </Text>
@@ -671,7 +675,6 @@ const MapSelector = () => {
           mt={5}
         >
           <Box
-            mt={5}
             zIndex={1}
             width={{ base: "100%", xl: "70%" }}
             height={{ base: "50vh", md: "60vh", xl: "70vh" }}
