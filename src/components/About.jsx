@@ -3,7 +3,7 @@ import { Box, Heading, Text, Container, VStack, Divider } from "@chakra-ui/react
 const About = () => {
     return (
         <Box bgGradient="linear(to-b, #F4FFC3, #E4E4D0)" fontFamily="Signika Negative, sans-serif" minW="100vw" minH="100vh" py={20}>
-            <Container maxW="container.lg" mt={12} py={12} bg="#FDF6EC" boxShadow="2xl" borderRadius="lg" p={12}>
+            <Container maxW={["85%", "container.lg"]} mt={12} py={12} bg="#FDF6EC" boxShadow="2xl" borderRadius="lg" p={[8, 12]}>
                 <VStack spacing={10} align="start">
                     <Heading as="h1" size="2xl" color="#1A4D2E" fontWeight="bold" textAlign="center" w="full" fontFamily="Signika Negative, sans-serif">
                         About AGROSCOPE

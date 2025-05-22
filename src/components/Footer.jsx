@@ -28,11 +28,11 @@ const Footer = () => {
                     <Text fontSize="lg" fontWeight="bold" color="white" mb={2}>
                         Quick Links
                     </Text>
-                    <VStack align="start" spacing={1} fontSize="sm">
+                    <Flex direction={["row","column"]} flexWrap={"wrap"} gap={2} fontSize="sm" mb={2}>
                         <Link href="/" _hover={{ color: "green.200" }}>Home</Link>
                         <Link href="/about" _hover={{ color: "green.200" }}>About</Link>
                         <Link href="/explore" _hover={{ color: "green.200" }}>Explore</Link>
-                    </VStack>
+                    </Flex>
                 </Box>
 
                 {/* Resources */}
@@ -40,12 +40,12 @@ const Footer = () => {
                     <Text fontSize="lg" fontWeight="bold" color="white" mb={2}>
                         Resources
                     </Text>
-                    <VStack align="start" spacing={1} fontSize="sm">
+                    <Flex direction={["row" ,"column"]} flexWrap={"wrap"} gap={2} fontSize="sm" mb={2}>
                         <Link href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/The_Sentinel_missions" target="_blank" _hover={{ color: "green.200" }}>Sentinel Missions</Link>
                         <Link href="https://www.copernicus.eu/en/access-data/conventional-data-access-hubs" target="_blank" _hover={{ color: "green.200" }}>Copernicus Hub</Link>
                         <Link href="https://www.sentinel-hub.com/explore/eobrowser/" target="_blank" _hover={{ color: "green.200" }}>EO Browser</Link>
                         <Link href="https://earthengine.google.com/" target="_blank" _hover={{ color: "green.200" }}>Google Earth Engine</Link>
-                    </VStack>
+                    </Flex>
                 </Box>
 
                 {/* Contact Us */}
@@ -53,7 +53,7 @@ const Footer = () => {
                     <Text fontSize="lg" fontWeight="bold" color="white" mb={2}>
                         Contact Us
                     </Text>
-                    <VStack align="start" spacing={1} fontSize="sm">
+                    <Flex direction={["row" ,"column"]} flexWrap={"wrap"} gap={2} fontSize="sm" mb={2}>
                         <HStack>
                             <Icon as={FaEnvelope} color="green.300" />
                             <Text>support@agroscope.com</Text>
@@ -66,7 +66,7 @@ const Footer = () => {
                             <Icon as={FaMapMarkerAlt} color="green.300" />
                             <Text>Bangalore, India</Text>
                         </HStack>
-                    </VStack>
+                    </Flex>
 
                     {/* Social Icons */}
                     <HStack spacing={3} mt={3}>

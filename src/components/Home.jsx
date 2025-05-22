@@ -26,7 +26,7 @@ const Home = () => {
             { src: "/Images/satellite.jpg", title: "Satellite Data Processing", desc: "Our system fetches and processes Sentinel-1 and Sentinel-2 images." },
             { src: "/Images/prediction.jpeg", title: "Prediction & Visualization", desc: "See highlighted ragi-growing areas on an interactive map." }
           ].map((item, index) => (
-            <Box maxW="sm" textAlign="center" key={index} p={6} borderRadius="lg" bg="white" boxShadow="xl" w={{ base: "100%", md: "300px" }} h="280px" _hover={{ transform: "scale(1.05)", transition: "0.3s ease-in-out" }}>
+            <Box maxW="sm" textAlign="center" key={index} p={6} borderRadius="lg" bg="white" boxShadow="xl" w={"300px"} h="280px" _hover={{ transform: "scale(1.05)", transition: "0.3s ease-in-out" }}>
               <Image src={item.src} boxSize="100px" mx="auto" mb={4} borderRadius="50%" boxShadow="md" />
               <Text fontSize="xl" fontWeight="bold" color="#1A4D2E">{item.title}</Text>
               <Text fontSize="md" color="#5D6D7E">{item.desc}</Text>
@@ -44,7 +44,7 @@ const Home = () => {
               { src: "/Images/accuracy.png", title: "High Accuracy", desc: "Our deep learning model ensures precise crop identification and mapping." },
               { src: "/Images/user-friendly.jpg", title: "User-Friendly Interface", desc: "Simple and intuitive design for a seamless experience." }
             ].map((item, index) => (
-              <Box maxW="sm" textAlign="center" key={index} p={6} borderRadius="lg" bg="white" boxShadow="xl" w={{ base: "100%", md: "300px" }} h="280px" _hover={{ transform: "scale(1.05)", transition: "0.3s ease-in-out" }}>
+              <Box maxW="sm" textAlign="center" key={index} p={6} borderRadius="lg" bg="white" boxShadow="xl" w={"300px"} h="280px" _hover={{ transform: "scale(1.05)", transition: "0.3s ease-in-out" }}>
                 <Image src={item.src} boxSize="120px" mx="auto" mb={4} borderRadius="50%" boxShadow="md" />
                 <Text fontSize="xl" fontWeight="bold" color="#1A4D2E">{item.title}</Text>
                 <Text fontSize="md" color="#5D6D7E">{item.desc}</Text>
