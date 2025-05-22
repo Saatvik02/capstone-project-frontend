@@ -390,7 +390,8 @@ const MapSelector = () => {
         setProgressInfo("Preparing request...");
         gradualProgress(0, 10, "Creating GeoJSON Data...");
 
-        const ws = new WebSocket("ws://localhost:8000/ws/progress");
+        // const ws = new WebSocket("ws://localhost:8000/ws/progress");
+        const ws = new WebSocket("wss://backend.agroscope.site/ws/progress");
 
         let resolveWsPromise;
         const wsPromise = new Promise((resolve, reject) => {
